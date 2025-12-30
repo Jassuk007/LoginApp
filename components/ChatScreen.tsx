@@ -126,15 +126,12 @@ export default function ChatScreen({ chatWithUser, onBack }: any) {
   };
 
   return (
-    <View style={styles.container}>
+    <View style={styles.mainContainer}>
       
       {/* 1. STATUS BAR */}
-      <StatusBar translucent backgroundColor="transparent" barStyle="light-content" />
+      <StatusBar translucent={false} backgroundColor="#075E54" barStyle="light-content" />
 
-      {/* 2. SPACER FOR REDMI/ANDROID NOTCH */}
-      <View style={{ height: 40, backgroundColor: '#075E54' }} />
-
-      {/* 3. HEADER */}
+      {/* 2. HEADER (Fixed at Top, Outside Keyboard View) */}
       <View style={styles.header}>
         <View style={{flexDirection: 'row', alignItems: 'center'}}>
             <TouchableOpacity onPress={onBack} style={{paddingRight: 10}}>
@@ -151,16 +148,16 @@ export default function ChatScreen({ chatWithUser, onBack }: any) {
       </View>
 
       {/* 
-          👉 FIX YAHAN HAI: 
-          behavior="height" android ke liye zaroori hai agar header fixed hai.
+          3. KEYBOARD HANDLING 
+          Hum 'padding' use kar rahe hain Android ke liye bhi, kyunki 'resize' tumhare phone par kaam nahi kar raha.
+          Isse Header affect nahi hoga kyunki Header is View se BAHAR hai.
       */}
       <KeyboardAvoidingView 
         style={{ flex: 1 }} 
-        behavior={Platform.OS === "ios" ? "padding" : "height"} 
-        keyboardVerticalOffset={Platform.OS === "ios" ? 0 : 0} // Zarurat pade to ise 20-30 kar dena
+        behavior={Platform.OS === "ios" ? "padding" : "padding"} // 👈 Both Padding
       >
         
-        {/* CHAT AREA */}
+        {/* CHAT LIST */}
         <View style={styles.chatContainer}>
           <FlatList
             ref={flatListRef}
@@ -275,23 +272,24 @@ export default function ChatScreen({ chatWithUser, onBack }: any) {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#075E54' },
-  chatContainer: { flex: 1, backgroundColor: '#E5E5E5' },
-
+  mainContainer: { flex: 1, paddingTop: 37, backgroundColor: '#075E54' },
+  
+  // 👉 Fixed Header (Padding = 0 kyunki Translucent False hai)
   header: { 
-    paddingTop: 5, 
-    paddingBottom: 10, 
+    paddingVertical: 8, 
     paddingHorizontal: 15, 
     backgroundColor: '#075E54', 
     flexDirection: 'row', 
     alignItems: 'center', 
     justifyContent: 'space-between', 
     elevation: 4,
-    zIndex: 10
+    height: 60, // Fixed height de di taaki shrink na ho
+    zIndex: 10,
   },
   
   headerTitle: { fontSize: 18, fontWeight: 'bold', color: '#fff', marginLeft: 10 },
-  
+  chatContainer: { flex: 1, backgroundColor: '#E5E5E5' },
+
   msgWrapper: { width: '100%', marginBottom: 2 },
   msgBubble: { maxWidth: '80%', padding: 5, borderRadius: 10, elevation: 1, minWidth: 100 },
   myMsg: { backgroundColor: '#E7FFDB', borderTopRightRadius: 0 },
@@ -309,7 +307,7 @@ const styles = StyleSheet.create({
   timeText: { fontSize: 10 },
   reactionChip: { position: 'absolute', bottom: -10, left: 10, backgroundColor: '#fff', paddingHorizontal: 6, paddingVertical: 2, borderRadius: 10, elevation: 2, borderWidth: 1, borderColor: '#eee' },
   
-  inputWrapper: { backgroundColor: '#E5E5E5' },
+  inputWrapper: { backgroundColor: '#E5E5E5' }, // Important background
   replyBar: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#fff', padding: 8, borderLeftWidth: 5, borderLeftColor: '#075E54', margin: 5, borderRadius: 5 },
   replyBarContent: { flex: 1 },
   replyBarTitle: { color: '#075E54', fontWeight: 'bold', fontSize: 12 },

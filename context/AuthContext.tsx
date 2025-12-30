@@ -12,7 +12,7 @@ export const AuthProvider = ({ children }: any) => {
   const [isLoading, setIsLoading] = useState(true);
 
   // ⚠️ Ensure your Ngrok URL is correct
-  const API_URL = 'https://unskewed-agripina-improvingly.ngrok-free.dev'; 
+  const API_URL = 'https://chat-backend-live.onrender.com'; 
 
   // --- 1. CONFIGURATION (Ye sabse zaroori step hai) ---
   // Iske bina koi bhi Google function kaam nahi karega
