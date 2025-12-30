@@ -1,46 +1,28 @@
-// import React from 'react';
-// import { Tabs } from 'expo-router';
-// import { Ionicons } from '@expo/vector-icons';
-// import { Platform } from 'react-native';
-
-// export default function TabLayout() {
-//   return (
-//     <Tabs
-//       screenOptions={{
-//         headerShown: false, // Upar wala header chupane ke liye
-//         tabBarStyle: Platform.select({
-//           ios: {
-//             position: 'absolute', // iOS par translucent effect ke liye
-//           },
-//           default: {},
-//         }),
-//       }}>
-//       <Tabs.Screen
-//         name="index"
-//         options={{
-//           title: 'Home',
-//           tabBarIcon: ({ color }) => <Ionicons name="home" size={28} color={color} />,
-//         }}
-//       />
-//       {/* Agar future mein aur tabs add karne ho (jaise Settings), toh yahan add kar sakte ho */}
-//     </Tabs>
-//   );
-// }
-
-
-
-
-import { Ionicons } from '@expo/vector-icons'; // Icons ke liye
+import { Ionicons } from '@expo/vector-icons';
 import { Tabs } from 'expo-router';
 import React from 'react';
+import { Platform } from 'react-native';
 
 export default function TabLayout() {
   return (
     <Tabs
       screenOptions={{
-        headerShown: false, // Upar wala header hata diya
-        tabBarActiveTintColor: '#2f95dc', // Active color (Blue)
-        tabBarStyle: { paddingBottom: 5, height: 60 },
+        headerShown: false, // System Header Off
+        
+        // 👉 MAGIC FIX: Keyboard aate hi Tabs gayab ho jayenge
+        tabBarHideOnKeyboard: true, 
+        
+        tabBarActiveTintColor: '#075E54', // WhatsApp Green
+        tabBarInactiveTintColor: 'gray',
+        tabBarStyle: { 
+          paddingBottom: 5, 
+          height: 60,
+          backgroundColor: '#fff',
+          borderTopWidth: 0,
+          elevation: 5,
+          // Android par kabhi kabhi height issue hota hai, ye fix karega
+          display: 'flex'
+        },
       }}>
       
       {/* 1. Home Tab (Tasks) */}
@@ -52,7 +34,7 @@ export default function TabLayout() {
         }}
       />
 
-      {/* 2. Profile Tab (New) */}
+      {/* 2. Profile Tab */}
       <Tabs.Screen
         name="profile"
         options={{
@@ -61,7 +43,7 @@ export default function TabLayout() {
         }}
       />
 
-      {/* 3. 👉 NEW Chat Tab */}
+      {/* 3. Chat Tab */}
       <Tabs.Screen
         name="chat"
         options={{

@@ -13,9 +13,6 @@ import {
   StatusBar
 } from 'react-native';
 
-// 👉 IMPORTANT: Ye library wala SafeAreaView hai, Native wala nahi
-import { SafeAreaView } from 'react-native-safe-area-context';
-
 import { io } from 'socket.io-client';
 import { Ionicons } from '@expo/vector-icons';
 import axios from 'axios';
@@ -25,6 +22,7 @@ import { useAuth } from '../context/AuthContext';
 
 export default function ChatScreen({ chatWithUser, onBack }: any) {
   const { user, API_URL } = useAuth();
+  
   const [messages, setMessages] = useState<any[]>([]);
   const [inputText, setInputText] = useState("");
   const [replyingTo, setReplyingTo] = useState<any>(null);
@@ -128,75 +126,86 @@ export default function ChatScreen({ chatWithUser, onBack }: any) {
   };
 
   return (
-    // 👉 CRITICAL FIX: SafeAreaView from context library
-    // edges=['top'] ka matlab sirf upar se safe jagah chhodo
-    <SafeAreaView style={styles.safeContainer} edges={['top']}>
+    <View style={styles.container}>
       
-      {/* StatusBar ko solid color do taaki overlap na dikhe */}
-      <StatusBar backgroundColor="#075E54" barStyle="light-content" />
+      {/* 1. STATUS BAR */}
+      <StatusBar translucent backgroundColor="transparent" barStyle="light-content" />
 
-      {/* Main Content Container */}
-      <View style={styles.container}>
+      {/* 2. SPACER FOR REDMI/ANDROID NOTCH */}
+      <View style={{ height: 40, backgroundColor: '#075E54' }} />
+
+      {/* 3. HEADER */}
+      <View style={styles.header}>
+        <View style={{flexDirection: 'row', alignItems: 'center'}}>
+            <TouchableOpacity onPress={onBack} style={{paddingRight: 10}}>
+                <Ionicons name="arrow-back" size={24} color="#fff" />
+            </TouchableOpacity>
+            <Image source={{ uri: 'https://cdn-icons-png.flaticon.com/512/149/149071.png' }} style={{ width: 35, height: 35, borderRadius: 18 }} />
+            <Text style={styles.headerTitle}>{chatWithUser.name}</Text>
+        </View>
+        <View style={{flexDirection:'row', gap: 15}}>
+            <Ionicons name="videocam" size={22} color="#fff" />
+            <Ionicons name="call" size={20} color="#fff" />
+            <Ionicons name="ellipsis-vertical" size={20} color="#fff" />
+        </View>
+      </View>
+
+      {/* 
+          👉 FIX YAHAN HAI: 
+          behavior="height" android ke liye zaroori hai agar header fixed hai.
+      */}
+      <KeyboardAvoidingView 
+        style={{ flex: 1 }} 
+        behavior={Platform.OS === "ios" ? "padding" : "height"} 
+        keyboardVerticalOffset={Platform.OS === "ios" ? 0 : 0} // Zarurat pade to ise 20-30 kar dena
+      >
         
-        {/* Header */}
-        <View style={styles.header}>
-          <View style={{flexDirection: 'row', alignItems: 'center'}}>
-              <TouchableOpacity onPress={onBack} style={{paddingRight: 10}}>
-                  <Ionicons name="arrow-back" size={24} color="#fff" />
-              </TouchableOpacity>
-              <Image source={{ uri: 'https://cdn-icons-png.flaticon.com/512/149/149071.png' }} style={{ width: 35, height: 35, borderRadius: 18 }} />
-              <Text style={styles.headerTitle}>{chatWithUser.name}</Text>
-          </View>
-          <View style={{flexDirection:'row', gap: 15}}>
-              <Ionicons name="videocam" size={22} color="#fff" />
-              <Ionicons name="call" size={20} color="#fff" />
-              <Ionicons name="ellipsis-vertical" size={20} color="#fff" />
-          </View>
+        {/* CHAT AREA */}
+        <View style={styles.chatContainer}>
+          <FlatList
+            ref={flatListRef}
+            data={messages}
+            inverted={true} 
+            keyExtractor={(item, index) => index.toString()}
+            contentContainerStyle={{ padding: 15 }}
+            renderItem={({ item }) => {
+              const isMe = item.senderId === (user._id || user.googleId);
+              return (
+                <TouchableOpacity activeOpacity={0.8} onLongPress={() => handleLongPress(item)}>
+                  <View style={[styles.msgWrapper, isMe ? {alignItems: 'flex-end'} : {alignItems: 'flex-start'}]}>
+                    <View style={[styles.msgBubble, isMe ? styles.myMsg : styles.otherMsg]}>
+                      {item.replyTo && (
+                        <View style={styles.replyContext}>
+                            <View style={styles.replyBarColor} />
+                            <View style={styles.replyContent}>
+                                <Text style={styles.replyName}>{item.replyTo.senderId === (user._id || user.googleId) ? "You" : chatWithUser.name}</Text>
+                                <Text numberOfLines={1} style={styles.replyText}>{item.replyTo.image ? "📷 Photo" : item.replyTo.text}</Text>
+                            </View>
+                        </View>
+                      )}
+                      {item.image && (
+                        <TouchableOpacity onPress={() => openImage(item.image)}>
+                            <Image source={{ uri: item.image }} style={styles.msgImage} resizeMode="cover" />
+                        </TouchableOpacity>
+                      )}
+                      {item.text ? <Text style={[styles.msgText, isMe ? styles.myText : styles.otherText]}>{item.text}</Text> : null}
+                      <View style={styles.metaContainer}>
+                        <Text style={[styles.timeText, isMe ? {color:'#cfd8dc'} : {color:'#999'}]}>
+                            {item.createdAt ? new Date(item.createdAt).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'}) : ""}
+                        </Text>
+                        {isMe && <Ionicons name="checkmark-done" size={16} color="#4FC3F7" style={{marginLeft: 4}} />}
+                      </View>
+                      {item.reaction && (<View style={styles.reactionChip}><Text style={{fontSize: 12}}>{item.reaction}</Text></View>)}
+                    </View>
+                  </View>
+                </TouchableOpacity>
+              );
+            }}
+          />
         </View>
 
-        {/* Chat List */}
-        <FlatList
-          ref={flatListRef}
-          data={messages}
-          inverted={true} 
-          keyExtractor={(item, index) => index.toString()}
-          contentContainerStyle={{ padding: 15 }}
-          renderItem={({ item }) => {
-            const isMe = item.senderId === (user._id || user.googleId);
-            return (
-              <TouchableOpacity activeOpacity={0.8} onLongPress={() => handleLongPress(item)}>
-                <View style={[styles.msgWrapper, isMe ? {alignItems: 'flex-end'} : {alignItems: 'flex-start'}]}>
-                  <View style={[styles.msgBubble, isMe ? styles.myMsg : styles.otherMsg]}>
-                    {item.replyTo && (
-                      <View style={styles.replyContext}>
-                          <View style={styles.replyBarColor} />
-                          <View style={styles.replyContent}>
-                              <Text style={styles.replyName}>{item.replyTo.senderId === (user._id || user.googleId) ? "You" : chatWithUser.name}</Text>
-                              <Text numberOfLines={1} style={styles.replyText}>{item.replyTo.image ? "📷 Photo" : item.replyTo.text}</Text>
-                          </View>
-                      </View>
-                    )}
-                    {item.image && (
-                      <TouchableOpacity onPress={() => openImage(item.image)}>
-                          <Image source={{ uri: item.image }} style={styles.msgImage} resizeMode="cover" />
-                      </TouchableOpacity>
-                    )}
-                    {item.text ? <Text style={[styles.msgText, isMe ? styles.myText : styles.otherText]}>{item.text}</Text> : null}
-                    <View style={styles.metaContainer}>
-                      <Text style={[styles.timeText, isMe ? {color:'#cfd8dc'} : {color:'#999'}]}>
-                          {item.createdAt ? new Date(item.createdAt).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'}) : ""}
-                      </Text>
-                      {isMe && <Ionicons name="checkmark-done" size={16} color="#4FC3F7" style={{marginLeft: 4}} />}
-                    </View>
-                    {item.reaction && (<View style={styles.reactionChip}><Text style={{fontSize: 12}}>{item.reaction}</Text></View>)}
-                  </View>
-                </View>
-              </TouchableOpacity>
-            );
-          }}
-        />
-
-        <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : undefined}>
+        {/* INPUT AREA */}
+        <View style={styles.inputWrapper}>
           {replyingTo && (
               <View style={styles.replyBar}>
                   <View style={styles.replyBarContent}>
@@ -223,70 +232,66 @@ export default function ChatScreen({ chatWithUser, onBack }: any) {
                   <Ionicons name={inputText || replyingTo ? "send" : "mic"} size={22} color="#fff" />
               </TouchableOpacity>
           </View>
-        </KeyboardAvoidingView>
+        </View>
 
-        <Modal animationType="fade" transparent={true} visible={modalVisible} onRequestClose={() => setModalVisible(false)}>
-          <TouchableWithoutFeedback onPress={() => setModalVisible(false)}>
-            <View style={styles.modalOverlay}>
-              <View style={styles.popupContainer}>
-                <View style={styles.reactionBar}>
-                  {['❤️', '😂', '😮', '😢', '😡', '👍'].map((emoji, index) => (
-                    <TouchableOpacity key={index} onPress={() => handleReaction(emoji)} style={{padding:5}}>
-                      <Text style={{fontSize: 24}}>{emoji}</Text>
-                    </TouchableOpacity>
-                  ))}
-                </View>
-                <View style={styles.menuContainer}>
-                  <TouchableOpacity style={styles.menuItem} onPress={handleReply}><Text style={styles.menuText}>Reply</Text><Ionicons name="arrow-undo-outline" size={22} color="#fff" /></TouchableOpacity>
-                  <View style={styles.divider} />
-                  <TouchableOpacity style={styles.menuItem} onPress={handleCopy}><Text style={styles.menuText}>Copy</Text><Ionicons name="copy-outline" size={22} color="#fff" /></TouchableOpacity>
-                  <View style={styles.divider} />
-                  <TouchableOpacity style={styles.menuItem} onPress={handleDelete}><Text style={[styles.menuText, {color: '#ff4757'}]}>Delete</Text><Ionicons name="trash-outline" size={22} color="#ff4757" /></TouchableOpacity>
-                </View>
+      </KeyboardAvoidingView>
+
+      {/* POPUPS */}
+      <Modal animationType="fade" transparent={true} visible={modalVisible} onRequestClose={() => setModalVisible(false)}>
+        <TouchableWithoutFeedback onPress={() => setModalVisible(false)}>
+          <View style={styles.modalOverlay}>
+            <View style={styles.popupContainer}>
+              <View style={styles.reactionBar}>
+                {['❤️', '😂', '😮', '😢', '😡', '👍'].map((emoji, index) => (
+                  <TouchableOpacity key={index} onPress={() => handleReaction(emoji)} style={{padding:5}}>
+                    <Text style={{fontSize: 24}}>{emoji}</Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
+              <View style={styles.menuContainer}>
+                <TouchableOpacity style={styles.menuItem} onPress={handleReply}><Text style={styles.menuText}>Reply</Text><Ionicons name="arrow-undo-outline" size={22} color="#fff" /></TouchableOpacity>
+                <View style={styles.divider} />
+                <TouchableOpacity style={styles.menuItem} onPress={handleCopy}><Text style={styles.menuText}>Copy</Text><Ionicons name="copy-outline" size={22} color="#fff" /></TouchableOpacity>
+                <View style={styles.divider} />
+                <TouchableOpacity style={styles.menuItem} onPress={handleDelete}><Text style={[styles.menuText, {color: '#ff4757'}]}>Delete</Text><Ionicons name="trash-outline" size={22} color="#ff4757" /></TouchableOpacity>
               </View>
             </View>
-          </TouchableWithoutFeedback>
-        </Modal>
-
-        <Modal visible={fullImageVisible} transparent={true} onRequestClose={() => setFullImageVisible(false)}>
-          <View style={styles.fullImageContainer}>
-            <StatusBar hidden />
-            <TouchableOpacity style={styles.closeImageBtn} onPress={() => setFullImageVisible(false)}>
-              <Ionicons name="close" size={30} color="#fff" />
-            </TouchableOpacity>
-            <Image source={{ uri: viewImageUri }} style={styles.fullImage} resizeMode="contain" />
           </View>
-        </Modal>
+        </TouchableWithoutFeedback>
+      </Modal>
 
-      </View>
-    </SafeAreaView>
+      <Modal visible={fullImageVisible} transparent={true} onRequestClose={() => setFullImageVisible(false)}>
+        <View style={styles.fullImageContainer}>
+          <StatusBar hidden />
+          <TouchableOpacity style={styles.closeImageBtn} onPress={() => setFullImageVisible(false)}>
+            <Ionicons name="close" size={30} color="#fff" />
+          </TouchableOpacity>
+          <Image source={{ uri: viewImageUri }} style={styles.fullImage} resizeMode="contain" />
+        </View>
+      </Modal>
+
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
-  // 👉 Safe Container: Ye status bar ke neeche se shuru hoga
-  safeContainer: { 
-    flex: 1, 
-    backgroundColor: '#075E54' // Top Area Green
-  },
-  
-  // 👉 Main Content
-  container: { 
-    flex: 1, 
-    backgroundColor: '#E5E5E5' // Chat BG Grey
-  },
+  container: { flex: 1, backgroundColor: '#075E54' },
+  chatContainer: { flex: 1, backgroundColor: '#E5E5E5' },
 
   header: { 
-    paddingVertical: 10, 
+    paddingTop: 5, 
+    paddingBottom: 10, 
     paddingHorizontal: 15, 
     backgroundColor: '#075E54', 
     flexDirection: 'row', 
     alignItems: 'center', 
     justifyContent: 'space-between', 
-    elevation: 4 
+    elevation: 4,
+    zIndex: 10
   },
   
   headerTitle: { fontSize: 18, fontWeight: 'bold', color: '#fff', marginLeft: 10 },
+  
   msgWrapper: { width: '100%', marginBottom: 2 },
   msgBubble: { maxWidth: '80%', padding: 5, borderRadius: 10, elevation: 1, minWidth: 100 },
   myMsg: { backgroundColor: '#E7FFDB', borderTopRightRadius: 0 },
@@ -303,6 +308,8 @@ const styles = StyleSheet.create({
   metaContainer: { flexDirection: 'row', justifyContent: 'flex-end', alignItems: 'center', marginTop: 2, marginRight: 5 },
   timeText: { fontSize: 10 },
   reactionChip: { position: 'absolute', bottom: -10, left: 10, backgroundColor: '#fff', paddingHorizontal: 6, paddingVertical: 2, borderRadius: 10, elevation: 2, borderWidth: 1, borderColor: '#eee' },
+  
+  inputWrapper: { backgroundColor: '#E5E5E5' },
   replyBar: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#fff', padding: 8, borderLeftWidth: 5, borderLeftColor: '#075E54', margin: 5, borderRadius: 5 },
   replyBarContent: { flex: 1 },
   replyBarTitle: { color: '#075E54', fontWeight: 'bold', fontSize: 12 },
@@ -311,6 +318,7 @@ const styles = StyleSheet.create({
   inputContainer: { flex: 1, flexDirection: 'row', backgroundColor: '#fff', borderRadius: 25, paddingHorizontal: 10, paddingVertical: 5, alignItems: 'center', marginLeft: 5, elevation: 2 },
   input: { flex: 1, fontSize: 16, maxHeight: 100, color: '#000' },
   sendBtn: { backgroundColor: '#00897B', width: 45, height: 45, borderRadius: 25, justifyContent: 'center', alignItems: 'center', marginLeft: 5, elevation: 2 },
+  
   modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.4)', justifyContent: 'center', alignItems: 'center' },
   popupContainer: { width: '70%' },
   reactionBar: { flexDirection: 'row', backgroundColor: '#262626', borderRadius: 30, paddingVertical: 10, paddingHorizontal: 15, marginBottom: 15, elevation: 10, width: '100%', justifyContent: 'space-between' },

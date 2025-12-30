@@ -1,216 +1,226 @@
-// import { GoogleSignin, isSuccessResponse } from '@react-native-google-signin/google-signin';
-// import axios from 'axios';
-// import * as ImagePicker from 'expo-image-picker';
-// import React, { useEffect, useState } from 'react';
-// import { ActivityIndicator, Alert, Button, ScrollView, StyleSheet, Text, View } from 'react-native';
-
-// // Components
-// import EditProfileForm from '../../components/EditProfileForm';
-// import UserProfileCard from '../../components/UserProfileCard';
-
-// export default function ProfileScreen() {
-//   const [userInfo, setUserInfo] = useState<any>(null);
-//   const [isEditing, setIsEditing] = useState(false);
-//   const [loading, setLoading] = useState(true);
-
-//   // Profile Form States
-//   const [name, setName] = useState("");
-//   const [dob, setDob] = useState("");
-//   const [address, setAddress] = useState("");
-//   const [picture, setPicture] = useState("");
-  
-//   // Date Picker
-//   const [date, setDate] = useState(new Date());
-//   const [showDatePicker, setShowDatePicker] = useState(false);
-
-//   // ⚠️ UPDATE NGROK URL
-//   const API_URL = 'https://hisako-exclamatory-galilea.ngrok-free.dev'; 
-
-//   useEffect(() => {
-//     GoogleSignin.configure({
-//       webClientId: "354250370440-25112dslrmd811iktak7fk334csqqje7.apps.googleusercontent.com", 
-//       offlineAccess: true,
-//     });
-//     checkLogin();
-//   }, []);
-
-//   const checkLogin = async () => {
-//     try {
-//       const isSignedIn = await GoogleSignin.isSignedIn();
-//       if (isSignedIn) {
-//         const currentUser = await GoogleSignin.getCurrentUser();
-//         if(currentUser?.idToken) handleBackendAuth(currentUser.idToken);
-//       } else {
-//         setLoading(false);
-//       }
-//     } catch (error) { setLoading(false); }
-//   };
-
-//   const signInWithGoogle = async () => {
-//     try {
-//       await GoogleSignin.hasPlayServices();
-//       const response = await GoogleSignin.signIn();
-//       if (isSuccessResponse(response) && response.data.idToken) {
-//         handleBackendAuth(response.data.idToken);
-//       }
-//     } catch (error) { console.log("Sign In Error:", error); }
-//   };
-
-//   const handleBackendAuth = async (token: string) => {
-//     try {
-//       const res = await axios.post(`${API_URL}/api/auth`, { token, provider: 'google' });
-//       const user = res.data.user;
-//       setUserInfo(user);
-      
-//       // Init Form Data
-//       setName(user.name || "");
-//       setDob(user.dob || "");
-//       setAddress(user.address || "");
-//       setPicture(user.picture || "");
-//     } catch (error) { Alert.alert("Error", "Connection Failed"); } 
-//     finally { setLoading(false); }
-//   };
-
-//   const handleLogout = async () => {
-//     await GoogleSignin.signOut();
-//     setUserInfo(null);
-//   };
-
-//   // Profile Logic
-//   const pickImage = async () => {
-//     const res = await ImagePicker.requestMediaLibraryPermissionsAsync();
-//     if (!res.granted) { Alert.alert("Permission Required!"); return; }
-//     const result = await ImagePicker.launchImageLibraryAsync({
-//       mediaTypes: ImagePicker.MediaTypeOptions.Images, allowsEditing: true, aspect: [1, 1], quality: 0.5, base64: true,
-//     });
-//     if (!result.canceled) setPicture(`data:image/jpeg;base64,${result.assets[0].base64}`);
-//   };
-
-//   const onDateChange = (event: any, selectedDate?: Date) => {
-//     setShowDatePicker(false);
-//     if (selectedDate) { setDate(selectedDate); setDob(selectedDate.toISOString().split('T')[0]); }
-//   };
-
-//   const saveProfile = async () => {
-//     try {
-//       const res = await axios.put(`${API_URL}/api/users/${userInfo.email}`, { name, dob, address, picture });
-//       setUserInfo(res.data);
-//       setIsEditing(false);
-//       Alert.alert("Success", "Profile Updated!");
-//     } catch (error) { Alert.alert("Error", "Update Failed"); }
-//   };
-
-//   if (loading) return <View style={styles.center}><ActivityIndicator size="large" /></View>;
-
-//   // 1. LOGIN BUTTON (Agar user logged out hai)
-//   if (!userInfo) {
-//     return (
-//       <View style={styles.center}>
-//         <Text style={{fontSize: 20, marginBottom: 20}}>Welcome User</Text>
-//         <Button title="Sign in with Google" onPress={signInWithGoogle} />
-//       </View>
-//     );
-//   }
-
-//   // 2. EDIT MODE
-//   if (isEditing) {
-//     return (
-//       <EditProfileForm 
-//         picture={picture || userInfo.picture} name={name} dob={dob} address={address} date={date} showDatePicker={showDatePicker}
-//         setName={setName} setAddress={setAddress} pickImage={pickImage} setShowDatePicker={setShowDatePicker} onDateChange={onDateChange}
-//         saveProfile={saveProfile} cancelEdit={() => setIsEditing(false)}
-//       />
-//     );
-//   }
-
-//   // 3. PROFILE VIEW
-//   return (
-//     <ScrollView contentContainerStyle={styles.container}>
-//       <UserProfileCard userInfo={userInfo} onEditPress={() => setIsEditing(true)} />
-      
-//       <View style={{ marginTop: 20, width: '100%' }}>
-//          <Button title="Logout" onPress={handleLogout} color="#c0392b" />
-//       </View>
-//     </ScrollView>
-//   );
-// }
-
-// const styles = StyleSheet.create({
-//   container: { padding: 20, paddingTop: 50, backgroundColor: '#F4F7FC', minHeight: '100%' },
-//   center: { flex: 1, justifyContent: 'center', alignItems: 'center' }
-// });
-
-
-
-
-
-
-
-
-import axios from 'axios';
+import React, { useState, useEffect } from 'react';
+import { 
+  View, Text, StyleSheet, Image, TouchableOpacity, Alert, 
+  ActivityIndicator, Modal, TextInput, ScrollView, Platform 
+} from 'react-native';
+import { useAuth } from '../../context/AuthContext';
+import { Ionicons } from '@expo/vector-icons';
+import * as Location from 'expo-location';
 import * as ImagePicker from 'expo-image-picker';
-import React, { useState } from 'react';
-import { Alert, Button, ScrollView, StyleSheet, View } from 'react-native';
-import EditProfileForm from '../../components/EditProfileForm';
-import UserProfileCard from '../../components/UserProfileCard';
-import { useAuth } from '../../context/AuthContext'; // Context use karo
+import axios from 'axios';
+import DateTimePicker from '@react-native-community/datetimepicker'; // 👉 Calendar Library
 
 export default function ProfileScreen() {
-  const { user, setUser, logout, API_URL } = useAuth(); // Logout function yahan se mila
-  const [isEditing, setIsEditing] = useState(false);
+  const { user, logout, setUser, API_URL } = useAuth();
   
-  // States (Init with user data)
-  const [name, setName] = useState(user?.name || "");
-  const [dob, setDob] = useState(user?.dob || "");
-  const [address, setAddress] = useState(user?.address || "");
-  const [picture, setPicture] = useState(user?.picture || "");
-  const [date, setDate] = useState(new Date());
+  const [loading, setLoading] = useState(false);
+  const [modalVisible, setModalVisible] = useState(false);
+  
+  // Edit States
+  const [newName, setNewName] = useState("");
+  const [newDob, setNewDob] = useState("");
+  const [newImage, setNewImage] = useState("");
+
+  // 👉 DATE PICKER STATES
   const [showDatePicker, setShowDatePicker] = useState(false);
+  const [dateObject, setDateObject] = useState(new Date());
+
+  useEffect(() => {
+    if (modalVisible) {
+        setNewName(user?.name || "");
+        setNewDob(user?.dob || ""); 
+        setNewImage(user?.picture || "");
+    }
+  }, [modalVisible, user]);
+
+  const handleGetLocation = async () => {
+    setLoading(true);
+    try {
+      let { status } = await Location.requestForegroundPermissionsAsync();
+      if (status !== 'granted') {
+        Alert.alert("Permission Denied", "Location permission is required.");
+        return;
+      }
+      let location = await Location.getCurrentPositionAsync({});
+      let addressResponse = await Location.reverseGeocodeAsync({
+        latitude: location.coords.latitude,
+        longitude: location.coords.longitude
+      });
+
+      if (addressResponse.length > 0) {
+        const addr = addressResponse[0];
+        const fullAddress = `${addr.city || addr.region}, ${addr.country}`;
+        const userId = user.googleId || user._id;
+        const res = await axios.put(`${API_URL}/api/users/location`, { userId, location: fullAddress });
+        setUser(res.data);
+        Alert.alert("Success", "Location updated!");
+      }
+    } catch (error) { Alert.alert("Error", "Could not fetch location."); } 
+    finally { setLoading(false); }
+  };
 
   const pickImage = async () => {
-    const res = await ImagePicker.requestMediaLibraryPermissionsAsync();
-    if (!res.granted) { Alert.alert("Permission Required!"); return; }
     const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ImagePicker.MediaTypeOptions.Images, allowsEditing: true, aspect: [1, 1], quality: 0.5, base64: true,
+      base64: true, quality: 0.5, allowsEditing: true, aspect: [1, 1]
     });
-    if (!result.canceled) setPicture(`data:image/jpeg;base64,${result.assets[0].base64}`);
+    if (!result.canceled && result.assets) {
+      setNewImage(`data:image/jpeg;base64,${result.assets[0].base64}`);
+    }
   };
 
+  // 👉 DATE CHANGE HANDLER
   const onDateChange = (event: any, selectedDate?: Date) => {
-    setShowDatePicker(false);
-    if (selectedDate) { setDate(selectedDate); setDob(selectedDate.toISOString().split('T')[0]); }
+    setShowDatePicker(false); // Calendar band karo
+    if (selectedDate) {
+      setDateObject(selectedDate);
+      // Date ko "DD-MM-YYYY" format mein convert karo
+      const formattedDate = selectedDate.toLocaleDateString('en-GB').replace(/\//g, '-');
+      setNewDob(formattedDate);
+    }
   };
 
-  const saveProfile = async () => {
+  const handleSaveProfile = async () => {
+    setLoading(true);
     try {
-      const res = await axios.put(`${API_URL}/api/users/${user.email}`, { name, dob, address, picture });
-      setUser(res.data); // Context update karo
-      setIsEditing(false);
+      const userId = user.googleId || user._id;
+      const res = await axios.put(`${API_URL}/api/users/profile`, {
+        userId,
+        name: newName,
+        picture: newImage,
+        dob: newDob
+      });
+      setUser(res.data);
+      setModalVisible(false);
       Alert.alert("Success", "Profile Updated!");
-    } catch (error) { Alert.alert("Error", "Update Failed"); }
+    } catch (error) {
+      Alert.alert("Error", "Failed to update profile");
+    } finally {
+      setLoading(false);
+    }
   };
-
-  if (isEditing) {
-    return (
-      <EditProfileForm 
-        picture={picture} name={name} dob={dob} address={address} date={date} showDatePicker={showDatePicker}
-        setName={setName} setAddress={setAddress} pickImage={pickImage} setShowDatePicker={setShowDatePicker} onDateChange={onDateChange}
-        saveProfile={saveProfile} cancelEdit={() => setIsEditing(false)}
-      />
-    );
-  }
 
   return (
     <ScrollView contentContainerStyle={styles.container}>
-      <UserProfileCard userInfo={user} onEditPress={() => setIsEditing(true)} />
-      <View style={{ marginTop: 20, width: '100%' }}>
-         {/* Logout Button: Ab ye seedha Context wala logout call karega */}
-         <Button title="Logout" onPress={logout} color="#c0392b" />
+      <View style={styles.header}>
+        <Text style={styles.headerTitle}>My Profile</Text>
       </View>
+
+      <View style={styles.card}>
+        <Image source={{ uri: user?.picture || 'https://cdn-icons-png.flaticon.com/512/149/149071.png' }} style={styles.avatar} />
+        <Text style={styles.name}>{user?.name}</Text>
+        <Text style={styles.email}>{user?.email}</Text>
+
+        <View style={styles.infoRow}>
+          <Ionicons name="calendar-outline" size={20} color="#8e44ad" />
+          <Text style={styles.infoText}>{user?.dob || "DOB not set"}</Text>
+        </View>
+
+        <View style={styles.infoRow}>
+          <Ionicons name="location-outline" size={20} color="#e74c3c" />
+          <Text style={styles.infoText}>{user?.location || "Location not set"}</Text>
+        </View>
+
+        <View style={styles.divider} />
+
+        <TouchableOpacity style={styles.editBtn} onPress={() => setModalVisible(true)}>
+          <Ionicons name="create-outline" size={20} color="#fff" />
+          <Text style={styles.btnText}>Edit Profile</Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity style={styles.locationBtn} onPress={handleGetLocation} disabled={loading}>
+          {loading ? <ActivityIndicator color="#fff" /> : (
+            <>
+              <Ionicons name="navigate" size={20} color="#fff" />
+              <Text style={styles.btnText}>Update Location</Text>
+            </>
+          )}
+        </TouchableOpacity>
+
+        <TouchableOpacity style={styles.logoutBtn} onPress={logout}>
+          <Ionicons name="log-out-outline" size={24} color="#fff" />
+          <Text style={styles.btnText}>Logout</Text>
+        </TouchableOpacity>
+      </View>
+
+      {/* --- EDIT PROFILE MODAL --- */}
+      <Modal visible={modalVisible} animationType="slide" transparent={true}>
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContainer}>
+            <Text style={styles.modalTitle}>Edit Profile</Text>
+            
+            <TouchableOpacity onPress={pickImage} style={{alignItems: 'center', marginBottom: 20}}>
+               <Image source={{ uri: newImage || 'https://cdn-icons-png.flaticon.com/512/149/149071.png' }} style={styles.modalAvatar} />
+               <Text style={styles.changePhotoText}>Change Photo</Text>
+            </TouchableOpacity>
+
+            <Text style={styles.label}>Full Name</Text>
+            <TextInput 
+              style={styles.input} 
+              value={newName} 
+              onChangeText={setNewName} 
+              placeholder="Enter Name"
+            />
+
+            {/* 👉 DATE OF BIRTH FIELD (Clickable) */}
+            <Text style={styles.label}>Date of Birth</Text>
+            <TouchableOpacity onPress={() => setShowDatePicker(true)}>
+              <View style={[styles.input, { justifyContent: 'center' }]}>
+                <Text style={{ color: newDob ? '#000' : '#888' }}>
+                  {newDob || "Select Date"}
+                </Text>
+              </View>
+            </TouchableOpacity>
+
+            {/* 👉 DATE PICKER COMPONENT (Sirf tab dikhega jab showDatePicker true ho) */}
+            {showDatePicker && (
+              <DateTimePicker
+                value={dateObject}
+                mode="date"
+                display="default"
+                onChange={onDateChange}
+                maximumDate={new Date()} // Future date select nahi kar payenge
+              />
+            )}
+
+            <View style={styles.modalButtons}>
+                <TouchableOpacity style={styles.cancelBtn} onPress={() => setModalVisible(false)}>
+                    <Text style={{color: '#333'}}>Cancel</Text>
+                </TouchableOpacity>
+                <TouchableOpacity style={styles.saveBtn} onPress={handleSaveProfile} disabled={loading}>
+                    {loading ? <ActivityIndicator color="#fff" /> : <Text style={{color: '#fff'}}>Save Changes</Text>}
+                </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
+
     </ScrollView>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { padding: 20, paddingTop: 50, backgroundColor: '#F4F7FC', minHeight: '100%' },
+  container: { flexGrow: 1, backgroundColor: '#f5f5f5' },
+  header: { backgroundColor: '#075E54', padding: 20, paddingTop: 50, alignItems: 'center' },
+  headerTitle: { fontSize: 22, fontWeight: 'bold', color: '#fff' },
+  card: { backgroundColor: '#fff', margin: 20, padding: 25, borderRadius: 15, alignItems: 'center', elevation: 5 },
+  avatar: { width: 110, height: 110, borderRadius: 55, marginBottom: 15, borderWidth: 3, borderColor: '#075E54' },
+  name: { fontSize: 24, fontWeight: 'bold', color: '#333' },
+  email: { fontSize: 14, color: '#666', marginBottom: 20 },
+  infoRow: { flexDirection: 'row', alignItems: 'center', marginBottom: 10, backgroundColor: '#f9f9f9', padding: 10, borderRadius: 10, width: '100%' },
+  infoText: { fontSize: 16, color: '#333', marginLeft: 10, fontWeight: '500' },
+  divider: { height: 1, backgroundColor: '#eee', width: '100%', marginVertical: 15 },
+  editBtn: { flexDirection: 'row', backgroundColor: '#f39c12', paddingVertical: 12, borderRadius: 25, alignItems: 'center', marginBottom: 10, width: '100%', justifyContent: 'center' },
+  locationBtn: { flexDirection: 'row', backgroundColor: '#3498db', paddingVertical: 12, borderRadius: 25, alignItems: 'center', marginBottom: 10, width: '100%', justifyContent: 'center' },
+  logoutBtn: { flexDirection: 'row', backgroundColor: '#e74c3c', paddingVertical: 12, borderRadius: 25, alignItems: 'center', width: '100%', justifyContent: 'center' },
+  btnText: { color: '#fff', fontSize: 16, fontWeight: 'bold', marginLeft: 10 },
+  modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'center', alignItems: 'center' },
+  modalContainer: { width: '85%', backgroundColor: '#fff', borderRadius: 15, padding: 25, elevation: 10 },
+  modalTitle: { fontSize: 20, fontWeight: 'bold', marginBottom: 20, textAlign: 'center', color: '#075E54' },
+  modalAvatar: { width: 90, height: 90, borderRadius: 45 },
+  changePhotoText: { color: '#3498db', marginTop: 5, fontSize: 12, fontWeight: 'bold' },
+  label: { fontSize: 12, color: '#666', marginBottom: 5, fontWeight: 'bold', alignSelf: 'flex-start' },
+  input: { width: '100%', borderWidth: 1, borderColor: '#ddd', borderRadius: 8, padding: 10, fontSize: 16, marginBottom: 15, backgroundColor: '#f9f9f9', height: 50 },
+  modalButtons: { flexDirection: 'row', justifyContent: 'space-between', width: '100%', marginTop: 10 },
+  cancelBtn: { padding: 12, flex: 1, alignItems: 'center' },
+  saveBtn: { backgroundColor: '#075E54', padding: 12, borderRadius: 8, flex: 1, alignItems: 'center', marginLeft: 10 }
 });
